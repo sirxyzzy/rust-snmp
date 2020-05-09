@@ -1137,6 +1137,7 @@ impl<'a> SnmpPdu<'a> {
         let seq = AsnReader::from_bytes(bytes).read_raw(asn1::TYPE_SEQUENCE)?;
         let mut rdr = AsnReader::from_bytes(seq);
         let version = match rdr.read_asn_integer()? {
+            0 => snmp::Version::V1,
             1 => snmp::Version::V2,
             _ => return Err(SnmpError::UnsupportedVersion)
         };
