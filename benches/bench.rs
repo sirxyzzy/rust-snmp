@@ -36,7 +36,7 @@ fn asn1_parse_getnext_pdu(b: &mut test::Bencher) {
         let mut reader = snmp::AsnReader::from_bytes(&pdu[..]);
         reader.read_asn_sequence(|rdr| {
             let version = try!(rdr.read_asn_integer());
-            assert_eq!(version, snmp::snmp::VERSION_2 as i64);
+            assert_eq!(version, snmp::snmp::Version::V2 as i64);
             let community = try!(rdr.read_asn_octetstring());
             assert_eq!(community, b"tyS0n43d");
             let msg_ident = try!(rdr.peek_byte());

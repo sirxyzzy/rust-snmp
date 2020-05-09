@@ -177,7 +177,12 @@ pub mod snmp {
 
     use super::asn1;
 
-    pub const VERSION_2:    i64 = 1;
+    #[derive(Debug)]
+    pub enum Version {
+        V1,
+        V2,
+        V3,
+    }
 
     pub const MSG_GET:      u8 = asn1::CLASS_CONTEXTSPECIFIC | asn1::CONSTRUCTED | 0;
     pub const MSG_GET_NEXT: u8 = asn1::CLASS_CONTEXTSPECIFIC | asn1::CONSTRUCTED | 1;
@@ -492,7 +497,7 @@ pub mod pdu {
                 buf.push_integer(req_id as i64);
             });
             buf.push_octet_string(community);
-            buf.push_integer(snmp::VERSION_2 as i64);
+            buf.push_integer(snmp::Version::V2 as i64);
         });
     }
 
@@ -511,7 +516,7 @@ pub mod pdu {
                 buf.push_integer(req_id as i64);
             });
             buf.push_octet_string(community);
-            buf.push_integer(snmp::VERSION_2 as i64);
+            buf.push_integer(snmp::Version::V2 as i64);
         });
     }
 
@@ -533,7 +538,7 @@ pub mod pdu {
                 buf.push_integer(req_id as i64);
             });
             buf.push_octet_string(community);
-            buf.push_integer(snmp::VERSION_2 as i64);
+            buf.push_integer(snmp::Version::V2 as i64);
         });
     }
 
@@ -568,7 +573,7 @@ pub mod pdu {
                 buf.push_integer(req_id as i64);
             });
             buf.push_octet_string(community);
-            buf.push_integer(snmp::VERSION_2 as i64);
+            buf.push_integer(snmp::Version::V2 as i64);
         });
     }
 
@@ -606,7 +611,7 @@ pub mod pdu {
                 buf.push_integer(req_id as i64);
             });
             buf.push_octet_string(community);
-            buf.push_integer(snmp::VERSION_2 as i64);
+            buf.push_integer(snmp::Version::V2 as i64);
         });
     }
 }
@@ -1118,8 +1123,8 @@ impl<'a> Iterator for AsnReader<'a> {
 
 #[derive(Debug)]
 pub struct SnmpPdu<'a> {
-    version: i64,
     community: &'a [u8],
+    pub version: snmp::Version,
     pub message_type: SnmpMessageType,
     pub req_id: i32,
     pub error_status: u32,
@@ -1131,10 +1136,11 @@ impl<'a> SnmpPdu<'a> {
     pub fn from_bytes(bytes: &'a [u8]) -> SnmpResult<SnmpPdu<'a>> {
         let seq = AsnReader::from_bytes(bytes).read_raw(asn1::TYPE_SEQUENCE)?;
         let mut rdr = AsnReader::from_bytes(seq);
-        let version = rdr.read_asn_integer()?;
-        if version != snmp::VERSION_2 {
-            return Err(SnmpError::UnsupportedVersion);
-        }
+        let version = match rdr.read_asn_integer()? {
+            1 => snmp::Version::V2,
+            _ => return Err(SnmpError::UnsupportedVersion)
+        };
+
         let community = rdr.read_asn_octetstring()?;
         let ident = rdr.peek_byte()?;
         let message_type = SnmpMessageType::from_ident(ident)?;
